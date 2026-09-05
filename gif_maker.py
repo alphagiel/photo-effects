@@ -4,72 +4,21 @@ gif_maker.py - apply a photo effect and export as an animated GIF (or a static f
 
 Usage:
     python3 gif_maker.py <input_image> [output_file] [--static] [--effect coin-shine]
+
+Effects live one-per-file under effects/ and are collected into effects.EFFECTS.
 """
 
 import sys
 import os
-import math
-from PIL import Image, ImageDraw, ImageChops, ImageFilter
+from PIL import Image
 
-FRAMES = 24
+from effects import EFFECTS, FRAMES
+
 FRAME_DURATION_MS = 45
 STATIC_SIZE = 512   # single-frame PNG, no size pressure
 GIF_SIZE = 384      # animated GIF: kept smaller to hit the file-size target below
 GIF_COLORS = 64     # shared palette size for the GIF's color table
 GIF_MAX_BYTES = 1_000_000
-
-
-def coin_shine_feature(base: Image.Image) -> list[Image.Image]:
-    """Diagonal coin-shine/glimmer sweep across the image."""
-    BAND_ANGLE_DEG = 25       # angle of the shine streak
-    BAND_WIDTH_RATIO = 0.35   # width of the bright streak relative to image size
-    SHINE_COLOR = (255, 250, 210)  # warm gold-white
-    MAX_INTENSITY = 0.55      # cap how bright the glint gets (0-1), avoids blowing out the face
-
-    base = base.convert("RGB")
-    w, h = base.size
-
-    # Oversized canvas so the rotated band can travel fully across the image
-    diag = int(math.hypot(w, h))
-    big = diag * 2
-    band_w = max(20, int(diag * BAND_WIDTH_RATIO))
-
-    # Vertical gradient band: dark -> bright -> dark
-    gradient = Image.new("L", (band_w, big), 0)
-    gdraw = ImageDraw.Draw(gradient)
-    half = band_w / 2
-    for x in range(band_w):
-        d = abs(x - half) / half
-        val = int(255 * MAX_INTENSITY * max(0.0, 1.0 - d) ** 1.5)
-        gdraw.line([(x, 0), (x, big)], fill=val)
-
-    # Paste the gradient band into a big square canvas, then rotate to get the diagonal streak
-    band_canvas = Image.new("L", (big, big), 0)
-    band_canvas.paste(gradient, (big // 2 - band_w // 2, 0))
-    band_canvas = band_canvas.rotate(BAND_ANGLE_DEG, resample=Image.BICUBIC, expand=False)
-    band_canvas = band_canvas.filter(ImageFilter.GaussianBlur(radius=diag * 0.02))
-
-    frames = []
-    travel = big - w
-    for i in range(FRAMES):
-        t = i / FRAMES
-        offset_x = int(travel * t)
-        offset_y = (big - h) // 2
-        mask = band_canvas.crop((offset_x, offset_y, offset_x + w, offset_y + h))
-
-        highlight = Image.new("RGB", (w, h), SHINE_COLOR)
-        lit = ImageChops.screen(base, Image.composite(highlight, Image.new("RGB", (w, h), (0, 0, 0)), mask))
-
-        frames.append(lit)
-
-    return frames
-
-
-# Registry of available effects: each takes a base image and returns a list of frames.
-# To add a new gif maker, write a function like coin_shine_feature() above and register it here.
-EFFECTS = {
-    "coin-shine": coin_shine_feature,
-}
 
 
 def save_optimized_gif(frames: list[Image.Image], out_path: str, max_bytes: int = GIF_MAX_BYTES):
@@ -97,23 +46,27 @@ def save_optimized_gif(frames: list[Image.Image], out_path: str, max_bytes: int 
 
 
 def main():
-    args = [a for a in sys.argv[1:] if not a.startswith("--")]
-    static = "--static" in sys.argv[1:]
+    raw = sys.argv[1:]
+    static = "--static" in raw
 
     effect_name = "coin-shine"
-    if "--effect" in sys.argv:
-        effect_name = sys.argv[sys.argv.index("--effect") + 1]
+    if "--effect" in raw:
+        idx = raw.index("--effect")
+        effect_name = raw[idx + 1]
+        del raw[idx:idx + 2]  # drop the flag and its value before parsing positionals
+
+    args = [a for a in raw if not a.startswith("--")]
 
     if effect_name not in EFFECTS:
         print(f"Unknown effect '{effect_name}'. Available: {', '.join(EFFECTS)}")
         sys.exit(1)
 
     if len(args) < 1:
-        print("Usage: python3 gif_maker.py <input_image> [output_file] [--static] [--effect coin-shine]")
+        print(f"Usage: python3 gif_maker.py <input_image> [output_file] [--static] [--effect {'|'.join(EFFECTS)}]")
         sys.exit(1)
 
     in_path = args[0]
-    default_out = "shine.png" if static else "shine.gif"
+    default_out = f"{effect_name}.png" if static else f"{effect_name}.gif"
     out_path = args[1] if len(args) > 1 else default_out
 
     base = Image.open(in_path)
