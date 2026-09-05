@@ -10,6 +10,7 @@ Effects live one-per-file under effects/ and are collected into effects.EFFECTS.
 
 import sys
 import os
+import re
 from PIL import Image
 
 from effects import EFFECTS, FRAMES
@@ -19,6 +20,21 @@ STATIC_SIZE = 512   # single-frame PNG, no size pressure
 GIF_SIZE = 384      # animated GIF: kept smaller to hit the file-size target below
 GIF_COLORS = 64     # shared palette size for the GIF's color table
 GIF_MAX_BYTES = 1_000_000
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+OUTPUT_ROOT = os.path.join(SCRIPT_DIR, "generated-images")
+
+
+def next_output_path(effect_name: str, ext: str) -> str:
+    """generated-images/<effect_name>/<effect_name>-N.<ext>, N picking up after the highest existing one."""
+    folder = os.path.join(OUTPUT_ROOT, effect_name)
+    os.makedirs(folder, exist_ok=True)
+
+    pattern = re.compile(rf"^{re.escape(effect_name)}-(\d+)\.{re.escape(ext)}$")
+    existing = [int(m.group(1)) for f in os.listdir(folder) if (m := pattern.match(f))]
+    n = max(existing, default=0) + 1
+
+    return os.path.join(folder, f"{effect_name}-{n}.{ext}")
 
 
 def save_optimized_gif(frames: list[Image.Image], out_path: str, max_bytes: int = GIF_MAX_BYTES):
@@ -66,8 +82,8 @@ def main():
         sys.exit(1)
 
     in_path = args[0]
-    default_out = f"{effect_name}.png" if static else f"{effect_name}.gif"
-    out_path = args[1] if len(args) > 1 else default_out
+    ext = "png" if static else "gif"
+    out_path = args[1] if len(args) > 1 else next_output_path(effect_name, ext)
 
     base = Image.open(in_path)
 
