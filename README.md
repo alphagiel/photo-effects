@@ -61,6 +61,43 @@ python3 gif_maker.py photo.jpg --effect sparkle --static
 python3 gif_maker.py photo.jpg --effect space-dust --density 75 --speed 150
 ```
 
+## How it works, step by step
+
+Running `python3 gif_maker.py` with no arguments walks you through the whole thing:
+
+1. **It asks for your photo.** Drag the image file straight into the terminal window (it'll paste in the path automatically) or just type the path yourself.
+2. **It shows you a numbered list of effects.** Type the number, or type the effect's name directly.
+3. **It asks for whatever settings that effect actually uses.** A sparkle-type effect asks for density (how many pieces) and speed (how fast it plays); a shine/shimmer effect asks for angle and speed instead. Each question shows a few presets plus a default — hit Enter to accept the default, type a preset number, or type any custom value in the allowed range.
+4. **It generates 24 frames and saves the result** to `generated-images/<effect>/<effect>-N.gif`, auto-numbered so the newest file is always the highest N.
+
+Here's what that actually looks like in a terminal:
+
+```
+$ python3 gif_maker.py
+Drag your image into this window (or type its path), then press Enter: /Users/alphagiel/Desktop/sample-photo.jpeg
+
+Which effect do you want?
+  1. coin-shine
+  2. sparkle
+  3. sparkle-contoured
+  4. rainbow-shimmer
+  5. bokeh
+  6. space-dust
+Pick a number (1-6) or type the name: 5
+Density (25/50/75, or type a custom value 5-100) [default 50]: 100
+Playback speed % (100 = normal, higher = faster) (50/100/200, or type a custom value 25-400) [default 100]: 55
+Saved /Users/alphagiel/Desktop/gif-maker/generated-images/bokeh/bokeh-5.gif (24 frames, 871 KB)
+```
+
+Already know exactly what you want? Skip the whole conversation with flags in one line:
+
+```
+$ python3 gif_maker.py ~/Desktop/sample-photo.jpeg --effect sparkle-contoured --density 20 --speed 90
+Saved /Users/alphagiel/Desktop/gif-maker/generated-images/sparkle-contoured/sparkle-contoured-6.gif (24 frames, 216 KB)
+```
+
+Any flag you leave out still gets asked about interactively (as long as you're running it in a real terminal) — you can mix and match, e.g. pass `--effect` but let it prompt you for density.
+
 ## Adding a new effect
 
 Effects live one-per-file in `effects/`. Each is just a function:
