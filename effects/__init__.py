@@ -10,10 +10,12 @@ To add a new gif maker:
 from .common import FRAMES
 from .coin_shine import coin_shine_feature
 from .sparkle import sparkle_feature
+from .sparkle_contoured import sparkle_contoured_feature
 from .rainbow_shimmer import rainbow_shimmer_feature
 
 EFFECTS = {
     "coin-shine": coin_shine_feature,
     "sparkle": sparkle_feature,
+    "sparkle-contoured": sparkle_contoured_feature,
     "rainbow-shimmer": rainbow_shimmer_feature,
 }

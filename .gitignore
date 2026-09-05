@@ -7,3 +7,7 @@ __pycache__/
 *.png
 *.jpg
 *.jpeg
+
+# except the README preview samples (generated from the stock sample photo, not a real person)
+!docs/samples/*.gif
+!docs/samples/*.png
