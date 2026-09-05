@@ -10,6 +10,10 @@ Made because paying for "add a shine to my photo" felt ridiculous. This does it 
 |:---:|:---:|:---:|:---:|
 | ![coin shine](docs/samples/coin-shine.gif) | ![sparkle](docs/samples/sparkle.gif) | ![sparkle contoured](docs/samples/sparkle-contoured.gif) | ![rainbow shimmer](docs/samples/rainbow-shimmer.gif) |
 
+| Bokeh | Space Dust |
+|:---:|:---:|
+| ![bokeh](docs/samples/bokeh.gif) | ![space dust](docs/samples/space-dust.gif) |
+
 ## Install
 
 Requires Python 3.10+ and [Pillow](https://pillow.readthedocs.io/).
@@ -32,7 +36,7 @@ Options:
 
 | Flag | What it does |
 |---|---|
-| `--effect <name>` | Which effect to apply: `coin-shine`, `sparkle`, `sparkle-contoured`, `rainbow-shimmer` |
+| `--effect <name>` | Which effect to apply: `coin-shine`, `sparkle`, `sparkle-contoured`, `rainbow-shimmer`, `bokeh`, `space-dust` |
 | `--static` | Save a single flattering frame as a `.png` instead of an animated `.gif` (useful anywhere animated images aren't supported, like most profile photo slots) |
 
 Example:
