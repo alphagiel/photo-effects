@@ -5,9 +5,12 @@ from PIL import Image, ImageDraw, ImageChops, ImageFilter
 from .common import FRAMES
 
 
-def sparkle_feature(base: Image.Image) -> list[Image.Image]:
-    """Small twinkling star-glints that pulse on and off at random spots."""
-    NUM_SPARKLES = 10
+def sparkle_feature(base: Image.Image, density: float = 1.0) -> list[Image.Image]:
+    """Small twinkling star-glints that pulse on and off at random spots.
+
+    density: 0.05-1.0 fraction of the tuned baseline sparkle count (1.0 = the default look).
+    """
+    NUM_SPARKLES = max(1, round(10 * density))
     SPARKLE_COLOR = (255, 255, 255)
     SEED = 7  # fixed so sparkle positions are stable across runs of the same size
 

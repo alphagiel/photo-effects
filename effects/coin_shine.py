@@ -4,9 +4,9 @@ from PIL import Image, ImageDraw, ImageChops, ImageFilter
 from .common import FRAMES
 
 
-def coin_shine_feature(base: Image.Image) -> list[Image.Image]:
+def coin_shine_feature(base: Image.Image, angle: float = 25) -> list[Image.Image]:
     """Diagonal coin-shine/glimmer sweep across the image."""
-    BAND_ANGLE_DEG = 25       # angle of the shine streak
+    BAND_ANGLE_DEG = angle    # angle of the shine streak
     BAND_WIDTH_RATIO = 0.35   # width of the bright streak relative to image size
     SHINE_COLOR = (255, 250, 210)  # warm gold-white
     MAX_INTENSITY = 0.55      # cap how bright the glint gets (0-1), avoids blowing out the face

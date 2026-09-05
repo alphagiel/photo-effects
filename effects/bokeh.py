@@ -5,9 +5,12 @@ from PIL import Image, ImageDraw, ImageChops, ImageFilter
 from .common import FRAMES
 
 
-def bokeh_feature(base: Image.Image) -> list[Image.Image]:
-    """Soft, blurred circles of light drifting across the image, like out-of-focus camera bokeh."""
-    NUM_ORBS = 5
+def bokeh_feature(base: Image.Image, density: float = 1.0) -> list[Image.Image]:
+    """Soft, blurred circles of light drifting across the image, like out-of-focus camera bokeh.
+
+    density: 0.05-1.0 fraction of the tuned baseline orb count (1.0 = the default look).
+    """
+    NUM_ORBS = max(1, round(5 * density))
     SEED = 11  # fixed so orb positions/colors are stable across runs of the same size
     COLORS = [
         (255, 250, 235),  # warm white

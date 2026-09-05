@@ -38,11 +38,17 @@ Options:
 |---|---|
 | `--effect <name>` | Which effect to apply: `coin-shine`, `sparkle`, `sparkle-contoured`, `rainbow-shimmer`, `bokeh`, `space-dust` |
 | `--static` | Save a single flattering frame as a `.png` instead of an animated `.gif` (useful anywhere animated images aren't supported, like most profile photo slots) |
+| `--density 5-100` | How many sparkles/dust particles/orbs to render, as a % of the tuned default. Only applies to `sparkle`, `sparkle-contoured`, `bokeh`, `space-dust`. |
+| `--angle <degrees>` | The sweep angle of the shimmer band. Only applies to `coin-shine`, `rainbow-shimmer`. |
+| `--speed 25-400` | Playback speed as a %, 100 = normal, higher = faster. Applies to all animated effects (ignored with `--static`). |
+
+If you leave `--density`/`--angle`/`--speed` off, and the effect you picked actually uses that knob, you'll get asked for it interactively (with a few presets to pick from, or type your own value) — unless you're piping input or running non-interactively, in which case it just uses a sensible default so scripts never hang.
 
 Example:
 
 ```
 python3 gif_maker.py photo.jpg --effect sparkle --static
+python3 gif_maker.py photo.jpg --effect space-dust --density 75 --speed 150
 ```
 
 ## Adding a new effect
@@ -55,3 +61,12 @@ def my_effect_feature(base: Image.Image) -> list[Image.Image]:
 ```
 
 Drop it in `effects/`, import it and add it to `EFFECTS` in `effects/__init__.py`, and it's immediately usable via `--effect my-effect`.
+
+To make it tunable via `--density` or `--angle` (and get the interactive prompt for free), just add a matching keyword argument with a default:
+
+```python
+def my_effect_feature(base: Image.Image, density: float = 1.0) -> list[Image.Image]:
+    ...  # density arrives as a 0.05-1.0 fraction, already resolved from the flag/prompt
+```
+
+`gif_maker.py` detects which of `density`/`angle` an effect's function accepts and only asks about the ones it actually uses.

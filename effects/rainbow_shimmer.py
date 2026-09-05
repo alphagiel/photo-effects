@@ -4,9 +4,9 @@ from PIL import Image, ImageDraw, ImageFilter, ImageChops
 from .common import FRAMES
 
 
-def rainbow_shimmer_feature(base: Image.Image) -> list[Image.Image]:
+def rainbow_shimmer_feature(base: Image.Image, angle: float = 25) -> list[Image.Image]:
     """Diagonal shimmer band that sweeps across the image cycling through the rainbow."""
-    BAND_ANGLE_DEG = 25       # angle of the shimmer streak
+    BAND_ANGLE_DEG = angle    # angle of the shimmer streak
     BAND_WIDTH_RATIO = 0.22   # width of the bright streak relative to image size
     SATURATION = 220          # 0-255, how vivid the rainbow colors are
     MAX_INTENSITY = 0.45      # cap how bright the shimmer gets (0-1), avoids blowing out the face

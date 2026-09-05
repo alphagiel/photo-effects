@@ -5,9 +5,12 @@ from PIL import Image, ImageDraw, ImageChops, ImageFilter
 from .common import FRAMES
 
 
-def space_dust_feature(base: Image.Image) -> list[Image.Image]:
-    """Soft white/blue glowing dust drifting slowly, with parallax depth."""
-    NUM_PARTICLES = 40
+def space_dust_feature(base: Image.Image, density: float = 1.0) -> list[Image.Image]:
+    """Soft white/blue glowing dust drifting slowly, with parallax depth.
+
+    density: 0.05-1.0 fraction of the tuned baseline particle count (1.0 = the default look).
+    """
+    NUM_PARTICLES = max(1, round(40 * density))
     WHITE_TINT = (255, 255, 255)
     BLUE_TINT = (170, 205, 255)
     SEED = 13  # fixed so particle layout is stable across runs of the same size

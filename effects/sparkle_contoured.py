@@ -5,9 +5,12 @@ from PIL import Image, ImageDraw, ImageChops
 from .common import FRAMES
 
 
-def sparkle_contoured_feature(base: Image.Image) -> list[Image.Image]:
-    """Small twinkling cartoon star-glints (black outline, pulsing white fill)."""
-    NUM_SPARKLES = 10
+def sparkle_contoured_feature(base: Image.Image, density: float = 1.0) -> list[Image.Image]:
+    """Small twinkling cartoon star-glints (black outline, pulsing white fill).
+
+    density: 0.05-1.0 fraction of the tuned baseline sparkle count (1.0 = the default look).
+    """
+    NUM_SPARKLES = max(1, round(10 * density))
     SPARKLE_COLOR = (255, 255, 255)
     OUTLINE_COLOR = (0, 0, 0)
     SEED = 7  # fixed so sparkle positions are stable across runs of the same size

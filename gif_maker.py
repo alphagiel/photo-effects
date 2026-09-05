@@ -4,13 +4,17 @@ gif_maker.py - apply a photo effect and export as an animated GIF (or a static f
 
 Usage:
     python3 gif_maker.py <input_image> [output_file] [--static] [--effect coin-shine]
+                          [--density 5-100] [--angle deg] [--speed 25-400]
 
 Effects live one-per-file under effects/ and are collected into effects.EFFECTS.
+Any --density/--angle/--speed flag left unset is asked for interactively instead
+(skipped automatically when not running in a real terminal, e.g. in a script).
 """
 
 import sys
 import os
 import re
+import inspect
 from PIL import Image
 
 from effects import EFFECTS, FRAMES
@@ -37,7 +41,7 @@ def next_output_path(effect_name: str, ext: str) -> str:
     return os.path.join(folder, f"{effect_name}-{n}.{ext}")
 
 
-def save_optimized_gif(frames: list[Image.Image], out_path: str, max_bytes: int = GIF_MAX_BYTES):
+def save_optimized_gif(frames: list[Image.Image], out_path: str, duration_ms: int, max_bytes: int = GIF_MAX_BYTES):
     """Quantize all frames to one shared palette and save, shrinking the palette
     further if the result is still over max_bytes."""
     colors = GIF_COLORS
@@ -51,7 +55,7 @@ def save_optimized_gif(frames: list[Image.Image], out_path: str, max_bytes: int 
             out_path,
             save_all=True,
             append_images=quantized[1:],
-            duration=FRAME_DURATION_MS,
+            duration=duration_ms,
             loop=0,
             optimize=True,
         )
@@ -61,15 +65,43 @@ def save_optimized_gif(frames: list[Image.Image], out_path: str, max_bytes: int 
         colors -= 16
 
 
+def take_flag_value(raw: list[str], name: str) -> str | None:
+    """Pop --name and the value right after it out of raw, returning the value (or None if absent)."""
+    if name not in raw:
+        return None
+    idx = raw.index(name)
+    value = raw[idx + 1]
+    del raw[idx:idx + 2]
+    return value
+
+
+def prompt_number(label: str, presets: tuple, default: float, lo: float, hi: float) -> float:
+    """Ask the user for a number, offering presets but accepting any custom value in [lo, hi].
+    Skipped (returns default) when not running in a real terminal, so scripts never hang."""
+    if not sys.stdin.isatty():
+        return default
+
+    preset_str = "/".join(str(p) for p in presets)
+    raw = input(f"{label} ({preset_str}, or type a custom value {lo:g}-{hi:g}) [default {default:g}]: ").strip()
+    if raw == "":
+        return default
+    try:
+        return max(lo, min(hi, float(raw.rstrip("%"))))
+    except ValueError:
+        print(f"Didn't understand '{raw}', using default {default:g}.")
+        return default
+
+
 def main():
     raw = sys.argv[1:]
     static = "--static" in raw
+    if static:
+        raw.remove("--static")
 
-    effect_name = "coin-shine"
-    if "--effect" in raw:
-        idx = raw.index("--effect")
-        effect_name = raw[idx + 1]
-        del raw[idx:idx + 2]  # drop the flag and its value before parsing positionals
+    effect_name = take_flag_value(raw, "--effect") or "coin-shine"
+    density_flag = take_flag_value(raw, "--density")
+    angle_flag = take_flag_value(raw, "--angle")
+    speed_flag = take_flag_value(raw, "--speed")
 
     args = [a for a in raw if not a.startswith("--")]
 
@@ -78,12 +110,37 @@ def main():
         sys.exit(1)
 
     if len(args) < 1:
-        print(f"Usage: python3 gif_maker.py <input_image> [output_file] [--static] [--effect {'|'.join(EFFECTS)}]")
+        print(
+            f"Usage: python3 gif_maker.py <input_image> [output_file] [--static] "
+            f"[--effect {'|'.join(EFFECTS)}] [--density 5-100] [--angle deg] [--speed 25-400]"
+        )
         sys.exit(1)
 
     in_path = args[0]
     ext = "png" if static else "gif"
     out_path = args[1] if len(args) > 1 else next_output_path(effect_name, ext)
+
+    effect_fn = EFFECTS[effect_name]
+    effect_params = inspect.signature(effect_fn).parameters
+
+    # Only ask for the knobs this particular effect actually uses.
+    kwargs = {}
+    if "density" in effect_params:
+        density_pct = float(density_flag) if density_flag is not None else prompt_number(
+            "Density", presets=(25, 50, 75), default=50, lo=5, hi=100
+        )
+        kwargs["density"] = max(5, min(100, density_pct)) / 100
+    if "angle" in effect_params:
+        kwargs["angle"] = float(angle_flag) if angle_flag is not None else prompt_number(
+            "Sweep angle (degrees)", presets=(15, 25, 40), default=25, lo=0, hi=90
+        )
+
+    speed_pct = float(speed_flag) if speed_flag is not None else (
+        100.0 if static else prompt_number(
+            "Playback speed % (100 = normal, higher = faster)", presets=(50, 100, 200), default=100, lo=25, hi=400
+        )
+    )
+    duration_ms = round(FRAME_DURATION_MS * (100 / max(25, min(400, speed_pct))))
 
     base = Image.open(in_path)
 
@@ -96,7 +153,7 @@ def main():
     size = STATIC_SIZE if static else GIF_SIZE
     base = base.resize((size, size), Image.LANCZOS)
 
-    frames = EFFECTS[effect_name](base)
+    frames = effect_fn(base, **kwargs)
 
     if static:
         # pick a frame where the glint is off to one side, not crossing the face
@@ -104,7 +161,7 @@ def main():
         frames[pick].save(out_path)
         print(f"Saved {out_path} (static frame {pick}/{FRAMES})")
     else:
-        gif_size = save_optimized_gif(frames, out_path)
+        gif_size = save_optimized_gif(frames, out_path, duration_ms)
         print(f"Saved {out_path} ({len(frames)} frames, {gif_size / 1024:.0f} KB)")
 
 
