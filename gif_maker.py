@@ -14,6 +14,7 @@ Any --density/--angle/--speed flag left unset is asked for interactively instead
 import sys
 import os
 import re
+import shlex
 import inspect
 from PIL import Image
 
@@ -92,31 +93,69 @@ def prompt_number(label: str, presets: tuple, default: float, lo: float, hi: flo
         return default
 
 
+def prompt_for_image_path() -> str:
+    """Ask the user to drag a file into the terminal (or type a path), until a real file is given."""
+    while True:
+        raw = input("Drag your image into this window (or type its path), then press Enter: ").strip()
+        if not raw:
+            continue
+        # shlex undoes both the quoting and the backslash-escaping a terminal adds when you drag a file in
+        parts = shlex.split(raw)
+        path = os.path.expanduser(parts[0]) if parts else ""
+        if os.path.isfile(path):
+            return path
+        print(f"Can't find a file at '{path}' - try again.")
+
+
+def prompt_for_effect() -> str:
+    """Show a numbered menu of the registered effects and let the user pick one."""
+    names = list(EFFECTS)
+    print("\nWhich effect do you want?")
+    for i, name in enumerate(names, 1):
+        print(f"  {i}. {name}")
+    while True:
+        choice = input(f"Pick a number (1-{len(names)}) or type the name: ").strip()
+        if choice.isdigit() and 1 <= int(choice) <= len(names):
+            return names[int(choice) - 1]
+        if choice in EFFECTS:
+            return choice
+        print(f"Didn't recognize '{choice}' - try again.")
+
+
 def main():
     raw = sys.argv[1:]
     static = "--static" in raw
     if static:
         raw.remove("--static")
 
-    effect_name = take_flag_value(raw, "--effect") or "coin-shine"
+    effect_flag = take_flag_value(raw, "--effect")
     density_flag = take_flag_value(raw, "--density")
     angle_flag = take_flag_value(raw, "--angle")
     speed_flag = take_flag_value(raw, "--speed")
 
     args = [a for a in raw if not a.startswith("--")]
+    interactive = sys.stdin.isatty()
 
-    if effect_name not in EFFECTS:
-        print(f"Unknown effect '{effect_name}'. Available: {', '.join(EFFECTS)}")
-        sys.exit(1)
-
-    if len(args) < 1:
+    if len(args) < 1 and not interactive:
         print(
             f"Usage: python3 gif_maker.py <input_image> [output_file] [--static] "
             f"[--effect {'|'.join(EFFECTS)}] [--density 5-100] [--angle deg] [--speed 25-400]"
         )
         sys.exit(1)
 
-    in_path = args[0]
+    in_path = args[0] if args else prompt_for_image_path()
+
+    if effect_flag is not None:
+        effect_name = effect_flag
+    elif interactive:
+        effect_name = prompt_for_effect()
+    else:
+        effect_name = "coin-shine"
+
+    if effect_name not in EFFECTS:
+        print(f"Unknown effect '{effect_name}'. Available: {', '.join(EFFECTS)}")
+        sys.exit(1)
+
     ext = "png" if static else "gif"
     out_path = args[1] if len(args) > 1 else next_output_path(effect_name, ext)
 

@@ -26,6 +26,16 @@ pip install pillow
 
 ## Usage
 
+**Guided setup** — just run it with no arguments:
+
+```
+python3 gif_maker.py
+```
+
+It'll ask you to drag your image into the terminal (or type its path), show you a numbered list of effects to pick from, then ask for whatever settings that effect uses (density/angle/speed) — with presets to pick from or type your own value.
+
+**Or skip straight to it** with flags, for scripting or quick reruns:
+
 ```
 python3 gif_maker.py <your-photo.jpg> --effect coin-shine
 ```
